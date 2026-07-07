@@ -1,0 +1,273 @@
+Big Picture
+
+
+
+How your 5 tests use it
+Test	                               Utilities Used
+test_smoke.py	              reset_dut(), apb_write(), apb_read()
+test_illegal_addr.py	      reset_dut(), apb_write_expect_error()
+test_random_basic.py	         reset_dut(), apb_write(), apb_read()
+test_stress_back2back.py	   reset_dut(), apb_write(), apb_read()
+test_reset.py	               reset_dut(), apb_write(), apb_read()
+
+
+
+Think of tb_utils.py as your mini APB driver library.
+
+Instead of writing:
+
+dut.PSEL.value = 1
+dut.PENABLE.value = 0
+dut.PWRITE.value = 1
+...
+await RisingEdge(dut.PCLK)
+...
+
+inside every test, you write:
+
+await apb_write(dut, addr, data)
+
+and tb_utils.py does all the APB signal work for you.
+
+How tb_utils.py Works
+
+It contains reusable functions:
+
+reset_dut()
+apb_write()
+apb_read()
+apb_write_expect_error()
+apb_read_expect_error()
+
+Each function performs a complete APB operation.
+
+1. reset_dut()
+
+When called:
+
+await reset_dut(dut)
+
+it:
+
+PRESETn = 0
+wait 5 clocks
+PRESETn = 1
+wait 1 clock
+
+Purpose:
+
+Put DUT into known state
+Clear RAM
+Clear outputs
+Start clean
+2. apb_write()
+
+When called:
+
+await apb_write(dut, 4, 0x55)
+
+tb_utils performs:
+
+Setup Phase
+PSEL    = 1
+PENABLE = 0
+PWRITE  = 1
+PADDR   = 4
+PWDATA  = 0x55
+
+wait 1 clock
+
+Access Phase
+PENABLE = 1
+
+wait 1 clock
+
+Return Idle
+PSEL = 0
+PENABLE = 0
+
+Result:
+
+RAM[4] = 0x55
+3. apb_read()
+
+When called:
+
+data = await apb_read(dut, 4)
+
+tb_utils performs:
+
+Setup Phase
+PSEL    = 1
+PENABLE = 0
+PWRITE  = 0
+PADDR   = 4
+
+wait 1 clock
+
+Access Phase
+PENABLE = 1
+
+wait 1 clock
+
+Capture Data
+PRDATA → data
+
+Return:
+
+data
+4. apb_write_expect_error()
+
+Used for invalid addresses.
+
+Example:
+
+err = await apb_write_expect_error(dut, 100, 0xAA)
+
+Returns:
+
+err == 1
+
+if PSLVERR asserted.
+
+5. apb_read_expect_error()
+
+Similar:
+
+data, err = await apb_read_expect_error(dut, 100)
+
+Returns:
+
+data
+PSLVERR
+How Each Test Uses It
+test_smoke.py
+
+Goal:
+
+Basic sanity
+
+Flow:
+
+await reset_dut(dut)
+
+await apb_write(dut, 5, 0x55)
+
+data = await apb_read(dut, 5)
+
+assert data == 0x55
+
+Checks:
+
+Can write?
+Can read?
+Correct value?
+test_illegal_addr.py
+
+Goal:
+
+Check PSLVERR
+
+Flow:
+
+await reset_dut(dut)
+
+err = await apb_write_expect_error(
+    dut,
+    100,
+    0xAA
+)
+
+assert err == 1
+
+Checks:
+
+Invalid address detected
+test_random_basic.py
+
+Goal:
+
+Random operations
+
+Flow:
+
+for i in range(20):
+
+    addr = random
+    data = random
+
+    await apb_write(dut, addr, data)
+
+    rd = await apb_read(dut, addr)
+
+    assert rd == data
+
+Checks:
+
+Many addresses
+Many values
+test_stress_back2back.py
+
+Goal:
+
+No idle cycles
+
+Flow:
+
+for addr in range(16):
+    await apb_write(dut, addr, addr)
+
+Immediately followed by:
+
+for addr in range(16):
+    data = await apb_read(dut, addr)
+
+Checks:
+
+Continuous traffic
+No gaps
+No corruption
+test_reset.py
+
+Goal:
+
+Reset during operation
+
+Flow:
+
+await apb_write(dut, 4, 0x55)
+
+await reset_dut(dut)
+
+data = await apb_read(dut, 4)
+
+Checks:
+
+Reset clears DUT correctly
+DV Analogy
+
+Think of:
+
+tb_utils.py
+
+as a tiny version of a UVM Driver.
+
+Test
+  ↓
+tb_utils.py
+  ↓
+APB signals
+  ↓
+DUT
+
+Later in UVM:
+
+Sequence
+   ↓
+Driver
+   ↓
+Interface
+   ↓
+DUT
+
+So tb_utils.py is your first step toward learning how a real verification driver abstracts protocol details away from the test.

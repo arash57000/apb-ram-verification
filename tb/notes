@@ -1,0 +1,534 @@
+🧠 Golden rule (memorize this)
+
+      Never drive DUT signals after await ReadOnly()
+      If you need to write again, wait for a new clock edge.
+
+      This is exactly how UVM separates sampling vs driving.
+      
+      
+      Always structure driver like this:
+
+      RisingEdge → drive signals
+
+      ReadOnly → sample signals
+
+      RisingEdge → drive cleanup
+        
+
+    
+
+🎯 Golden rule (APB + cocotb)
+
+   PSLVERR and PRDATA must be sampled in the same cycle as PREADY
+
+   Not one cycle later.
+   
+🔁 Write vs Sample vs Read (in cocotb / simulator terms)
+
+These are NOT Python concepts.
+They are simulation-time phases.
+
+Think in clocked RTL timing, not functions.
+
+1️⃣ WRITE = Drive signals (active region)
+
+What it means
+
+You are driving values onto DUT inputs.
+
+When it happens
+
+Before or at a clock edge
+
+In the active phase of the simulator
+
+Examples
+
+dut.psel.value = 1
+dut.paddr.value = addr
+dut.penable.value = 0
+
+
+UVM equivalent
+
+drv_if.psel   <= 1;
+drv_if.paddr  <= addr;
+
+
+📌 Rule
+
+Writes must NOT happen during ReadOnly()
+You can only drive signals in active phases.
+
+2️⃣ SAMPLE = Observe stable signals (read-only region)
+
+What it means
+
+You are observing DUT outputs when they are guaranteed stable.
+
+When it happens
+
+After all RTL has settled for that timestep
+
+In the ReadOnly phase
+
+Examples
+
+await ReadOnly()
+slverr = int(dut.pslverr.value)
+data   = int(dut.prdata.value)
+
+
+UVM equivalent
+
+@(posedge clk);
+#0;               // wait for NBA updates
+slverr = vif.pslverr;
+
+
+📌 Rule
+
+Sampling must happen in ReadOnly()
+Otherwise you may see old or transient values.
+
+3️⃣ READ = Transaction type, not timing
+
+This is where the confusion happens.
+
+❌ “Read” does NOT mean “sample”
+
+A READ transaction is an APB operation:
+
+pwrite = 0
+
+prdata is returned
+
+await drv.read(addr)
+
+
+This function contains all 3 phases:
+
+Write (drive APB signals)
+
+Sample (capture prdata, pslverr)
+
+Complete (drop bus)
+
+📌 READ ≠ SAMPLE
+
+🧠 Timeline of ONE APB READ (exactly your case)
+Cycle N:
+  Driver WRITE:
+    psel=1, pwrite=0, penable=0
+
+Cycle N+1:
+  Driver WRITE:
+    penable=1
+
+Cycle N+2:
+  DUT:
+    pready=1
+    prdata valid
+    pslverr valid
+
+  Monitor SAMPLE (ReadOnly):
+    sees prdata, pslverr
+
+  Driver SAMPLE (ReadOnly):
+    MUST sample here too 👈
+
+Cycle N+3:
+  Driver WRITE:
+    psel=0, penable=0
+
+❌ What went wrong in your failing runs
+
+You did this:
+
+await RisingEdge(clk)
+if pready:
+    break
+
+await ReadOnly()
+slverr = dut.pslverr
+
+
+❌ That samples one cycle later
+❌ pslverr already returned to 0
+❌ Monitor sampled correctly, driver didn’t   
+
+
+👉 In pure UVM philosophy:
+
+Driver drives
+
+Monitor samples
+
+Scoreboard checks
+
+👉 In cocotb (and many practical UVM drivers):
+
+Driver also samples only to know when the transaction completed and whether it errored
+
+Monitor is the authority for functional observation
+
+❗ The driver samples handshake and status, not functional data
+
+1️⃣ What the driver samples
+
+The driver samples only control / completion info:
+
+Signal	Why driver samples
+PREADY	Know when transfer finished
+PSLVERR	Know if transaction succeeded
+PRDATA	(Optional) only if returning value to test
+
+📌 The driver does NOT own correctness
+
+It does not compare expected vs actual
+
+It does not update memory model
+
+It does not track coverage
+
+That’s the monitor + scoreboard’s job.
+
+2️⃣ Why the driver must sample PSLVERR
+
+Your failing bug proves this perfectly.
+
+What happened:
+
+Monitor saw PSLVERR=1
+
+Driver sampled one cycle later
+
+PSLVERR already deasserted
+
+Driver thought error didn’t happen
+
+Assertion failed
+
+📌 If the driver doesn’t sample PSLVERR at the exact completion cycle, it cannot correctly return transaction status
+
+
+4️⃣ Proper responsibility split (UVM-clean)
+✔ Driver responsibilities
+
+Drive protocol correctly
+
+Wait for completion
+
+Sample transaction result
+
+Return result to sequence / test
+
+✔ Monitor responsibilities
+
+Observe ALL transactions
+
+Create canonical transaction object
+
+Broadcast to scoreboard & coverage
+
+✔ Scoreboard responsibilities
+
+Determine correctness
+
+5️⃣ cocotb makes this more visible (and stricter)
+
+Because cocotb enforces simulation phases:
+
+In cocotb, every simulation timestep is divided into phases.
+The two most important ones for DV are:
+
+Write (drive) phase
+
+ReadOnly (sample) phase
+
+Write phase → drive
+
+ReadOnly phase → sample
+
+cocotb rule (very strict)
+
+❌ You must not drive signals in ReadOnly
+✅ You should sample signals in ReadOnly
+
+If you don’t explicitly sample in the driver:
+
+You miss the completion window
+
+You get stale data
+
+You saw exactly this bug
+   
+✅ Correct pattern (memorize this)
+
+await RisingEdge(clk)
+await ReadOnly()
+
+if pready:
+    sample outputs NOW
+    
+    
+🔑 One-line rule to memorize
+
+Write drives signals, Sample observes stable outputs, Read is just a transaction that contains both.   
+
+
+📌 Golden Rule
+
+If the monitor sees it, the driver must sample in the SAME ReadOnly phase.
+
+
+ 
+🧠 Root cause (the key concept)   AssertionError: Expected PSLVERR=1 on write addr=45, got 0
+
+APB protocol rule:
+
+PSLVERR is only guaranteed valid in the same cycle as PREADY=1 AND PSEL && PENABLE
+
+Your current driver does this (simplified):
+
+Waits for PREADY
+
+Advances a clock
+
+Reads PSLVERR ❌ (too late)
+
+So:
+
+❌ The driver is sampling PSLVERR at the wrong time
+✅ The monitor is sampling it at the right time
+
+
+
+🧠 Mental model to memorize
+
+Drive before ReadOnly
+Sample only in ReadOnly
+Never drive in ReadOnly
+
+If you remember only this, you’ll avoid 90% of cocotb timing bugs.
+
+🧩 How this maps to UVM
+UVM concept	                                  cocotb equivalent
+@(posedge clk)	                                       await RisingEdge()
+NBA settle(NBA = Non-Blocking Assignment)  *    	          implicit
+Monitor sampling	                                 ReadOnly()
+Protocol stability	                            enforced by scheduler
+
+UVM hides this.
+cocotb forces you to be explicit.
+
+* All non-blocking assignments scheduled for the current timestep have finished updating signals.
+
+In other words:The design has fully “settled” for this clock edge.
+
+
+⏱️ Simulation phases (simplified)
+
+At a single clock edge:
+
+1) Active region
+   - Blocking assignments (=)
+   - Evaluate always blocks
+
+2) NBA region
+   - Non-blocking assignments (<=) update
+
+3) NBA settle
+   - All <= updates are now visible
+   - Combinational logic settles
+
+4) Observation phase
+   - Monitors/sample logic read stable signals
+
+
+📌 NBA settle = after step 2 and 3
+
+🧪 Why this matters for APB (your case)
+
+Signals like:
+
+PREADY
+
+PSLVERR
+
+PRDATA
+
+are often driven via:
+
+sequential logic (<=)
+
+combinational logic depending on registers
+
+So:
+
+If you sample before NBA settle, you may see the previous cycle’s value.
+
+
+2️⃣ Fundamental rule  
+
+Drivers drive.
+Monitors sample.
+Drivers should NEVER rely on sampled DUT outputs for checking.
+
+Write vs Read vs Sample (very important distinction)
+🔹 WRITE (driver action)
+
+Driver drives signals into the DUT
+
+Example:
+
+psel = 1
+penable = 1
+paddr = 45
+pwdata = 0x3333
+
+
+This is stimulus, not observation.
+
+🔹 SAMPLE (monitor action)
+
+Monitor observes stable DUT outputs
+
+Happens after NBA settle
+
+Uses:
+
+await RisingEdge(clk)
+await ReadOnly()
+
+
+This is observation, not control.
+
+🔹 READ (APB transaction type)
+
+Logical APB operation
+
+Still split into:
+
+Driver drives bus
+
+DUT responds
+
+Monitor samples response
+
+4️⃣ What “ReadOnly → sample” actually means
+
+When you do:
+
+await ReadOnly()
+
+
+You are saying:
+
+“Simulator, stop ALL writes.
+Let me look at the FINAL, settled values.”
+
+At this point:
+
+All <= assignments are done
+
+All combinational logic has settled
+
+Signals are stable
+
+📌 Monitors belong here
+📌 Drivers do NOT
+
+5️⃣ Why your DRIVER is wrong (precise reason)
+
+Your driver does this:
+
+await ReadOnly()
+slverr = int(self.dut.pslverr.value)
+
+
+Then later:
+
+await RisingEdge(self.dut.pclk)
+self.dut.psel.value = 0
+self.dut.penable.value = 0
+
+❌ The problem
+
+In APB, PSLVERR is only guaranteed valid when:
+
+PSEL && PENABLE && PREADY
+
+
+Once you advance the clock:
+
+DUT is allowed to deassert PSLVERR
+
+PSLVERR may be 1-cycle wide
+
+Your monitor samples exactly at the valid window
+Your driver samples after the protocol window closes
+
+That’s why:
+
+Component	 Result
+Monitor      	slverr = 1 ✅
+Driver	         slverr = 0 ❌
+
+6️⃣ Correct UVM-style architecture (this is the fix)
+❌ What NOT to do (current behavior)
+
+# Driver checking DUT outputs
+assert slverr == 1
+
+
+Drivers should never assert protocol correctness.
+
+✅ Correct architecture (UVM-accurate)
+Driver
+
+Drives APB
+
+Returns intent, not DUT truth
+
+await drv.write(addr, data, expect_slverr=True)
+
+Monitor
+
+Observes DUT
+
+Creates transactions
+
+ApbTxn(kind="WRITE", addr=45, slverr=1)
+
+Scoreboard
+
+Compares expected vs observed
+
+if txn.addr >= 32:
+    assert txn.slverr == 1
+
+
+📌 All checking belongs in the scoreboard
+
+7️⃣ One-sentence rule to memorize (this will save your career)
+
+Drivers never trust DUT outputs; monitors observe truth, scoreboards judge correctness.
+
+8️⃣ Why Verilator makes this visible (and other sims hide it)
+
+Commercial simulators:
+
+Often keep signals stable longer
+
+Mask timing mistakes
+
+Verilator:
+
+Cycle-accurate
+
+Protocol-strict
+
+Exposes bad sampling immediately
+
+This is why Verilator + cocotb is elite training.

@@ -1,0 +1,188 @@
+# tb_utils.py
+
+import cocotb
+
+from cocotb.triggers import RisingEdge
+
+from cocotb.triggers import ReadOnly
+
+
+# -------------------------------------------------
+# Reset
+
+async def reset_dut(dut):
+
+    dut.presetn.value = 0
+
+    dut.psel.value    = 0
+    dut.penable.value = 0
+    dut.pwrite.value  = 0
+    dut.paddr.value   = 0
+    dut.pwdata.value  = 0
+
+    for _ in range(5):
+        await RisingEdge(dut.pclk)
+
+    dut.presetn.value = 1
+
+    await RisingEdge(dut.pclk)
+
+
+# -------------------------------------------------
+# APB Write
+
+async def apb_write(dut, addr, data):
+
+    # Setup phase
+    dut.psel.value    = 1
+    dut.penable.value = 0
+    dut.pwrite.value  = 1
+    dut.paddr.value   = addr
+    dut.pwdata.value  = data
+
+    await RisingEdge(dut.pclk)
+
+    # Access phase
+    dut.penable.value = 1
+
+    await RisingEdge(dut.pclk)
+
+    # Return to idle
+    dut.psel.value    = 0
+    dut.penable.value = 0
+    dut.pwrite.value  = 0
+    
+    await RisingEdge(dut.pclk)
+    
+    '''
+    
+   Why This Fix  adding extra await RisingEdge(dut.pclk)  at the end Works?
+
+Each transaction becomes:
+
+Cycle 1: SETUP
+Cycle 2: ACCESS
+Cycle 3: TRANSFER / cleanup
+
+Your original helper only gave:
+
+Cycle 1: SETUP
+Cycle 2: ACCESS
+
+So the next write started too early.
+
+After editing tb_utils.py, run:
+
+make stress 
+    
+    '''
+
+
+# -------------------------------------------------
+# APB Read
+
+async def apb_read(dut, addr):
+
+    # Setup phase
+    dut.psel.value    = 1
+    dut.penable.value = 0
+    dut.pwrite.value  = 0
+    dut.paddr.value   = addr
+
+    await RisingEdge(dut.pclk)
+
+    # Access phase
+    dut.penable.value = 1
+
+    await RisingEdge(dut.pclk)
+    
+    await ReadOnly()
+
+    data = int(dut.prdata.value)
+    
+    await RisingEdge(dut.pclk)
+
+    # Return to idle
+    dut.psel.value    = 0
+    dut.penable.value = 0
+    
+    await RisingEdge(dut.pclk)
+
+
+    cocotb.log.info(
+    f"READ ADDR={addr} DATA=0x{data:02X}"
+    )
+
+    return data
+
+    '''
+    
+   Why This Fix  adding extra await RisingEdge(dut.pclk)  at the end Works?
+
+Each transaction becomes:
+
+Cycle 1: SETUP
+Cycle 2: ACCESS
+Cycle 3: TRANSFER / cleanup
+
+Your original helper only gave:
+
+Cycle 1: SETUP
+Cycle 2: ACCESS
+
+So the next write started too early.
+
+After editing tb_utils.py, run:
+
+make stress 
+    
+    '''
+# -------------------------------------------------
+# APB Write and check PSLVERR
+
+async def apb_write_expect_error(dut, addr, data):
+
+    dut.psel.value    = 1
+    dut.penable.value = 0
+    dut.pwrite.value  = 1
+    dut.paddr.value   = addr
+    dut.pwdata.value  = data
+
+    await RisingEdge(dut.pclk)
+
+    dut.penable.value = 1
+
+    await RisingEdge(dut.pclk)
+
+    err = int(dut.PSLVERR.value)
+
+    dut.psel.value    = 0
+    dut.penable.value = 0
+    dut.pwrite.value  = 0
+
+    return err
+
+
+# -------------------------------------------------
+# APB Read and check PSLVERR
+
+async def apb_read_expect_error(dut, addr):
+
+    dut.psel.value    = 1
+    dut.penable.value = 0
+    dut.pwrite.value  = 0
+    dut.paddr.value   = addr
+
+    await RisingEdge(dut.pclk)
+
+    dut.penable.value = 1
+
+    await RisingEdge(dut.pclk)
+
+    data = int(dut.prdata.value)
+    err  = int(dut.PSLVERR.value)
+
+    dut.psel.value    = 0
+    dut.penable.value = 0
+
+    return data, err
