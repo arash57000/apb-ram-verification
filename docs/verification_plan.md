@@ -2,8 +2,8 @@
 
 **Project:** APB RAM Verification using cocotb + Verilator  
 **Author:** Andrew Abdi  
-**Version:** 1.0  
-**Date:** July 6, 2026
+**Version:** 2.0  
+**Date:** July 12, 2026
 
 ---
 
@@ -74,44 +74,20 @@ The design supports:
 
 # 5. APB Transaction Flow
 
-Each transaction consists of two phases.
+This verification plan assumes standard ARM AMBA APB transaction behavior.
 
-## Setup Phase
+For a detailed explanation of:
 
-Master drives:
+- APB timing
+- Bus phases
+- Signal descriptions
+- Read/write transactions
+- Error handling
+- Reset behavior
 
-- psel = 1
-- penable = 0
-- paddr
-- pwrite
-- pwdata (write only)
+refer to:
 
----
-
-## Access Phase
-
-Master asserts:
-
-- penable = 1
-
-Slave responds with:
-
-- pready
-- prdata (read)
-- pslverr (if required)
-
----
-
-## Complete Phase
-
-Master deasserts:
-
-- psel
-- penable
-
-The slave returns to the IDLE state.
-
----
+docs/apb_protocol.md
 
 # 6. Verification Objectives
 
@@ -137,7 +113,7 @@ The verification environment consists of:
 - APB helper functions
 - Directed tests
 - Randomized tests
-- Regression Makefile
+- Regression automation (Makefile + scripts)
 - GTKWave waveform generation
 
 ---
@@ -153,26 +129,31 @@ Constrained-random tests generate legal APB transactions with randomized address
 
 ## 8.1 Directed Tests
 
-| Test ID | Test Name | Objective | Status |
-|----------|-----------|-----------|--------|
-| DT001 | Smoke Test | Verify basic APB write/read operation | Complete |
-| DT002 | Reset Test | Verify reset behavior | Complete |
-| DT003 | Illegal Address Test | Verify PSLVERR for invalid address | Complete |
-| DT004 | Stress Back-to-Back Test | Verify consecutive APB transfers | Complete |
-
+Test ID	Test	Status
+DT001	Smoke	✅ Complete
+DT002	Reset	✅ Complete
+DT003	Address 0	✅ Complete
+DT004	Address 31	✅ Complete
+DT005	Default Read	✅ Complete
+DT006	Overwrite	✅ Complete
+DT007	Sequential Write	✅ Complete
+DT008	Sequential Read	✅ Complete
+DT009	Illegal Address	🚧 Planned / In Progress
+DT010	Stress Back-to-Back	✅ Complete
 ---
 
 ## 8.2 Constrained-Random Tests
 
 | Test ID | Test Name | Objective | Status |
 |----------|-----------|-----------|--------|
-| CR001 | Random Basic Test | Random legal APB read/write operations | Complete |
+| CR001 | Random Basic Test | Random legal APB read/write operations | 🚧 In Progress |
 | CR002 | Random Address Test | Random valid address access | Planned |
 | CR003 | Random Data Pattern Test | Randomized write data patterns | Planned |
 | CR004 | Random Read/Write Mix | Random read and write sequence mix | Planned |
 | CR005 | Long Random Regression | Large number of randomized transactions | Planned |
 
 ---
+
 
 ## 8.3 Randomized Fields
 
@@ -202,7 +183,7 @@ The constrained-random tests shall obey the following constraints:
 
 | Test | Purpose | Status |
 |------|---------|--------|
-| Boundary Address Test | Verify address 0 and address 31 | Planned |
+| Boundary Address Test | Verify address 0 and address 31 | Complete |
 | Invalid Address Repeat Test | Repeated illegal address accesses | Planned |
 | Reset During Transaction | Reset asserted during APB transfer | Planned |
 | Random Reset Test | Reset inserted randomly between transactions | Planned |
@@ -221,6 +202,16 @@ Regression passes when:
 - No scoreboard mismatches occur
 - Functional coverage target is reached
 - Code coverage target is reached
+
+## 8.7 Exit Criteria
+
+Verification is considered complete when:
+
+- All directed tests pass.
+- All planned random tests pass.
+- Illegal address behavior is verified.
+- Functional coverage goals are met.
+- No known critical functional bugs remain.
 
 # 9. Planned Future Tests
 
@@ -323,6 +314,10 @@ The completed project shall include:
 - Coverage reports
 - Documentation
 - GitHub repository
+-Verification Plan
+-README
+-APB Protocol Documentation
+-Weekly Notes
 
 ---
 
@@ -331,6 +326,7 @@ The completed project shall include:
 | Version | Date | Description |
 |----------|------|-------------|
 | 1.0 | July 6, 2026 | Initial verification plan |
+| 2.0 | July 12, 2026 | Updated after completing Phases 1–5, expanded directed tests, added coverage goals, exit criteria, risks, deliverables, and project status |
 
 ---
 
@@ -340,13 +336,13 @@ The completed project shall include:
 |------|--------|
 | DUT RTL | Complete |
 | cocotb Environment | Complete |
-| Directed Tests | In Progress |
+| Directed Tests | Complete |
 | Smoke Test | Complete |
 | Reset Test | Complete |
-| Illegal Address Test | Complete |
+| Illegal Address Test | In Progress |
 | Stress Back-to-Back Test | Complete |
 | Constrained-Random Tests | In Progress |
-| Random Basic Test | Complete |
+| Random Basic Test | In Progress |
 | Long Random Regression | Planned |
 | Functional Coverage | Planned |
 | Code Coverage | Planned |

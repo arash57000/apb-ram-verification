@@ -137,6 +137,34 @@ After editing tb_utils.py, run:
 make stress 
     
     '''
+
+# -------------------------------------------------
+# Initialize RAM with a known data pattern
+
+async def initialize_memory_pattern(dut):
+    """
+    Initialize all RAM locations with a known pattern.
+
+    Address 0  -> 0x00000001
+    Address 1  -> 0x00000002
+    ...
+    Address 31 -> 0x00000020
+    """
+
+    cocotb.log.info("Initializing RAM with known data pattern...")
+
+    for addr in range(32):
+
+        data = addr + 1
+
+        cocotb.log.info(
+            f"WRITE ADDR={addr:02d} DATA=0x{data:08X}"
+        )
+
+        await apb_write(dut, addr, data)
+
+    cocotb.log.info("RAM initialization complete.")
+
 # -------------------------------------------------
 # APB Write and check PSLVERR
 

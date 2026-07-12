@@ -1,296 +1,310 @@
-APB RAM Verification Project
+# APB RAM Verification Project
 
-SoC Bus Verification | APB | Verilator | Coverage | tmux
+**ASIC / SoC Design Verification Project**
 
-📌 Project Overview
+SystemVerilog • APB • Cocotb • Python • Verilator • GTKWave • Linux
 
-This project implements and verifies an APB-based RAM peripheral using an open-source verification flow on Ubuntu (VMware).
-The objective is to validate protocol correctness, data integrity, address boundary behavior, error handling, and reset behavior of an APB slave, while demonstrating a realistic SoC DV workflow with coverage, automation, and debugging.
+---
 
-The design under test (DUT) is a 32-entry APB RAM supporting read, write, reset, and slave error signaling (PSLVERR) for illegal accesses.
+# Project Status
 
-📘 Introduction to APB (Advanced Peripheral Bus)
-What is APB?
+## Current Phase
 
-APB (Advanced Peripheral Bus) is a low-complexity, low-power, memory-mapped bus protocol defined by ARM AMBA.
-It is designed to connect low-bandwidth peripherals (such as UARTs, GPIOs, timers, and small RAMs) to high-performance system buses like AXI or AHB through a bridge.
+- ✅ Phase 1 – Planning
+- ✅ Phase 2 – Repository Setup
+- ✅ Phase 3 – RTL Development
+- ✅ Phase 4 – Testbench Development
+- ✅ Phase 5 – Basic Verification
 
-APB emphasizes:
+### Verification Progress
 
-Simplicity
+| Test | Status |
+|------|--------|
+| Smoke Test | ✅ PASS |
+| Reset Test | ✅ PASS |
+| Address 0 | ✅ PASS |
+| Address 31 | ✅ PASS |
+| Read Default | ✅ PASS |
+| Overwrite | ✅ PASS |
+| Sequential Write | ✅ PASS |
+| Sequential Read | ✅ PASS |
+
+### Next Phase
 
-Deterministic timing
+➡️ Phase 6 – Random & Negative Testing
 
-Ease of verification
+---
 
-Low power consumption
+# Project Overview
 
-Why APB Is Important in SoC Design
+This project implements and verifies an APB RAM peripheral using an open-source verification flow.
 
-Modern SoCs contain:
+The objective is to demonstrate a professional ASIC/SoC Design Verification workflow including:
+
+- RTL verification
+- APB protocol verification
+- Cocotb-based verification environment
+- Directed testing
+- Functional coverage
+- Scoreboard checking
+- Regression-ready test structure
+- Waveform debugging
 
-High-speed cores communicating over AXI/AHB
+The DUT is a 32-word × 32-bit APB RAM supporting:
 
-Large numbers of peripherals that only require simple register access
+- Read
+- Write
+- Reset
+- Illegal address detection
+- PSLVERR generation
 
-APB is critical because it:
+---
 
-Reduces peripheral design complexity
+---
 
-Minimizes verification effort
+# APB Protocol
 
-Provides predictable behavior
+This project verifies an **Advanced Peripheral Bus (APB)** slave implementing a
+32 × 32-bit RAM peripheral.
 
-Scales well to hundreds of peripherals
+For a detailed explanation of the APB protocol, including:
 
-As a result, APB is one of the most widely used buses in real SoCs.
+- Bus architecture
+- APB timing
+- Bus signals
+- Read transactions
+- Write transactions
+- Error handling (PSLVERR)
+- Reset behavior
+- APB state machine
 
-Typical Usage of APB
+see:
 
-APB is commonly used for:
+```
+docs/apb_protocol.md
+``` 
 
-UART, SPI, and I²C controllers
+# Repository Structure
 
-GPIO blocks
+```
+apb-ram-verification/
 
-Timers and watchdogs
+├── docs/
+│   ├── verification_plan.md
+│   └── weekly_notes.md
+│
+├── rtl/
+│   ├── apb_ram.sv
+│   ├── apb_if.sv
+│   └── tb_top.sv
+│
+├── tb/
+│   └── cocotb/
+│       ├── agents/
+│       ├── env/
+│       ├── sequences/
+│       └── tests/
+│
+├── scripts/
+├── coverage/
+├── results/
+├── Makefile
+└── README.md
+```
 
-Interrupt controllers
+---
 
-Configuration and status registers
+# Current Repository Status
 
-Small embedded RAMs (as implemented in this project)
+| Item | Status |
+|------|--------|
+| RTL | ✅ Complete |
+| Cocotb Environment | ✅ Complete |
+| Driver | ✅ Complete |
+| Monitor | ✅ Complete |
+| Scoreboard | ✅ Complete |
+| Coverage Collector | ✅ Complete |
+| Directed Tests | ✅ Complete |
+| Random Tests | 🚧 In Progress |
+| Regression | 🚧 Planned |
 
-APB is not intended for:
+# Design Under Test
 
-High-throughput data movement
+APB RAM
 
-Bursty or pipelined transfers
+Features
 
-APB System Structure
+- 32 × 32-bit memory
+- APB slave interface
+- FSM implementation
+- Active-low reset
+- Illegal address detection
+- PSLVERR support
+- Synchronous operation
 
-APB is typically part of a hierarchical bus architecture:
+---
 
-CPU / DMA
-    |
-AXI / AHB (High-speed bus)
-    |
-AXI-to-APB Bridge
-    |
--------------------------
-|   APB Peripheral Bus  |
--------------------------
- |     |      |      |
-UART  GPIO   TIMER   RAM
+# Verification Environment
 
+The verification environment follows a layered, UVM-inspired architecture implemented in Cocotb.
 
-The bridge translates high-performance bus transactions into simple APB accesses.
+Components
 
-APB Protocol Structure
+- Driver
+- Monitor
+- Agent
+- Environment
+- Scoreboard
+- Coverage
+- Directed Tests
 
-APB is a non-pipelined, single-transaction bus using a two-phase handshake.
+---
 
-Phase	Description
-IDLE	No active transfer
-SETUP	Address and control signals asserted
-ACCESS	Transfer completes when PREADY is asserted
+# Completed Verification
 
-Only one transaction is active at a time, simplifying verification.
+## Smoke
 
-Key APB Signals
-Signal	Direction	Description
-PCLK	Input	APB clock
-PRESETn	Input	Active-low reset (out-of-band)
-PSEL	Input	Peripheral select
-PENABLE	Input	Indicates ACCESS phase
-PADDR	Input	Address
-PWRITE	Input	Read (0) / Write (1)
-PWDATA	Input	Write data
-PRDATA	Output	Read data
-PREADY	Output	Transfer completion
-PSLVERR	Output	Slave error indication
-Error Handling (PSLVERR)
+- DUT boots correctly
 
-PSLVERR is asserted by the slave to indicate an error such as:
+## Reset
 
-Illegal address access
+- Reset initializes outputs
+- Memory reset verified
 
-Unsupported operation
+## Directed Tests
 
-Important behavior:
+- Address 0
+- Address 31
+- Default Read
+- Overwrite
+- Sequential Write
+- Sequential Read
 
-The transfer still completes (PREADY = 1)
+---
 
-The master must explicitly check PSLVERR
+# Planned Verification
 
-Reset Behavior (Out-of-Band Reset)
+Phase 6
 
-APB reset (PRESETn) is out-of-band, meaning:
+- Random transactions
+- Random read/write sequences
+- Illegal address tests
+- Back-to-back transactions
 
-It does not follow APB SETUP / ACCESS phases
+Phase 7
 
-It does not use PSEL, PENABLE, or PREADY
+- Functional coverage closure
+- Code coverage improvements
 
-It immediately forces the peripheral into a known state
+Phase 8
 
-Reset can occur:
+- Automated regression
+- CI integration
 
-While the bus is idle
+---
 
-During SETUP
+# Coverage Goals
 
-During ACCESS
+Functional coverage includes:
 
-This guarantees reliable recovery and clean initialization.
+- Read operations
+- Write operations
+- Boundary addresses
+- Illegal addresses
+- Reset behavior
+- Sequential accesses
 
-🎯 Verification Objectives
+Code coverage includes:
 
-Verify correct APB handshake timing
+- FSM states
+- Error paths
+- Normal paths
 
-Validate read/write data integrity
+---
 
-Detect and flag illegal address accesses
+# Running the Project
 
-Confirm proper PSLVERR behavior
+Compile and run
 
-Ensure reset correctly initializes FSM and memory
+```bash
+make
+```
 
-Improve coverage through targeted test refinement
+Run a specific test
 
-🏗️ Project Architecture
-Design Under Test (DUT)
+```bash
+make MODULE=tests.test_smoke
+```
 
-apb_ram.sv
+View waveforms
 
-32 × 32-bit memory
+```bash
+gtkwave waves/dump.vcd
+```
 
-Valid address range: 0–31
+Generate coverage
 
-Illegal address → PSLVERR = 1
-
-FSM-based APB implementation
-
-Active-low reset (presetn)
-
-Verification Environment (UVM-Style)
-Component	             Responsibility
-Sequence	    Generates APB read/write/reset traffic
-Driver	             Drives APB signals
-Monitor	                Observes completed APB transfers
-Scoreboard	      Reference memory model
-Agent / Env / Test	Structural integration
-
-The environment follows UVM methodology principles, adapted for an open-source simulation flow.
-
-🧪 Test Scenarios
-Directed Tests
-
-Reset initialization
-
-Single read/write
-
-Boundary address access (0 and 31)
-
-Illegal address detection
-
-Random Tests
-
-Random legal reads/writes
-
-Back-to-back transfers
-
-Bulk write followed by bulk read
-
-Random illegal address injection
-
-Reset Stress Tests
-
-Reset during idle
-
-Reset during active transfer
-
-Post-reset recovery validation
-
-📊 Coverage Strategy
-Functional Coverage
-
-Read vs write operations
-
-Legal vs illegal address bins
-
-PSLVERR asserted/deasserted
-
-Reset occurrence
-
-Sequential access patterns
-
-Code Coverage
-
-FSM state transitions
-
-Error and non-error paths
-
-Collected using Verilator coverage
-
-Targeted testing improved functional coverage by ~30% compared to baseline random testing.
-
-🖥️ Tools & Environment
-
-OS: Ubuntu (VMware)
-
-Simulator: Verilator
-
-Waveform Viewer: GTKWave
-
-Automation: Makefile + shell scripts
-
-Terminal Workflow: tmux
-
-Language: SystemVerilog
-
-🪟 tmux Workflow
-
-Typical tmux session layout:
-
-Pane 1: Simulation run
-
-Pane 2: Live log monitoring
-
-Pane 3: Waveform debugging
-
-Pane 4: Coverage generation
-
-This mirrors real DV debugging workflows used in industry.
-
-▶️ How to Run
-git clone <repo-url>
-cd apb-ram-verification
-
-make run
-gtkwave dump.vcd
+```bash
 make coverage
+```
 
+---
 
-Artifacts:
+# Tools Used
 
-dump.vcd – waveform
+| Category | Tool |
+|----------|------|
+| RTL | SystemVerilog |
+| Verification | Cocotb |
+| Language | Python |
+| Simulator | Verilator |
+| Waveforms | GTKWave |
+| OS | Ubuntu Linux |
+| Version Control | Git & GitHub |
 
-results/ – logs and coverage reports
+---
 
-🧩 What This Project Demonstrates
+# Skills Demonstrated
 
-Strong understanding of APB protocol
+- APB Protocol Verification
+- SystemVerilog RTL
+- Cocotb Verification
+- Python Test Development
+- Scoreboard Design
+- Driver Development
+- Monitor Development
+- Functional Coverage
+- Linux Workflow
+- Git Version Control
+- Waveform Debugging
 
-Practical SoC peripheral verification
+---
 
-Debugging via waveforms and logs
+# Future Work
 
-Coverage-driven verification mindset
+- Random verification
+- Constrained-random testing
+- Functional coverage closure
+- Coverage reports
+- Regression automation
+- GitHub Actions CI
 
-Open-source DV toolchain proficiency
+---
 
-👤 Author
+# Documentation
 
-Andrew Abdi
-SoC / ASIC Design Verification
-SystemVerilog • UVM • APB / AXI • Verilator • Cocotb
+Project documentation is available in the `docs/` directory.
+
+| Document | Description |
+|----------|-------------|
+| apb_protocol.md | APB protocol overview, timing, signals, and transactions |
+| verification_plan.md | Verification objectives, test plan, and coverage goals |
+| weekly_notes.md | Weekly engineering progress and lessons learned |
+
+# Author
+
+**Andrew Abdi**
+
+ASIC / SoC Design Verification Engineer
+
+SystemVerilog • UVM • Cocotb • Python • APB • Verilator • Linux

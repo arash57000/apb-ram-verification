@@ -78,6 +78,29 @@ reset:
 	make clean
 	make SIM=$(SIM) MODULE=tests.test_reset
 
+addr0:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_addr0
+
+addr31:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_addr31	
+
+read_default:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_read_default
+
+overwrite:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_overwrite
+
+seqwrite:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_sequential_write
+
+seqread:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_sequential_read
 # =====================================================
 # Run all tests
 # =====================================================
