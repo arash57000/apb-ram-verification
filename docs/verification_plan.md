@@ -17,6 +17,21 @@ The goal is to verify that the APB RAM correctly implements APB transactions, st
 
 ---
 
+# Project Verification Progress
+
+| Phase | Status |
+|--------|--------|
+| Phase 1 – Planning | ✅ Complete |
+| Phase 2 – Repository Setup | ✅ Complete |
+| Phase 3 – RTL Development | ✅ Complete |
+| Phase 4 – Testbench Development | ✅ Complete |
+| Phase 5 – Basic Verification | ✅ Complete |
+| Phase 6 – Functional Verification | 🚧 In Progress |
+| Phase 7 – Coverage | Planned |
+| Phase 8 – Regression | Planned |
+| Phase 9 – Debug | Planned |
+| Phase 10 – Documentation | In Progress |
+
 # 2. Design Overview
 
 The Device Under Test (DUT) is a simple APB slave implementing a 32-word memory.
@@ -129,17 +144,18 @@ Constrained-random tests generate legal APB transactions with randomized address
 
 ## 8.1 Directed Tests
 
-Test ID	Test	Status
-DT001	Smoke	✅ Complete
-DT002	Reset	✅ Complete
-DT003	Address 0	✅ Complete
-DT004	Address 31	✅ Complete
-DT005	Default Read	✅ Complete
-DT006	Overwrite	✅ Complete
-DT007	Sequential Write	✅ Complete
-DT008	Sequential Read	✅ Complete
-DT009	Illegal Address	🚧 Planned / In Progress
-DT010	Stress Back-to-Back	✅ Complete
+Test ID	          Test	       Status
+DT001	       Smoke	      ✅ Complete
+DT002	       Reset	      ✅ Complete
+DT003	Address 0 Boundary	  ✅ Complete
+DT004	Address 31 Boundary	  ✅ Complete
+DT005	Default Memory Read	  ✅ Complete
+DT006	Overwrite Memory	  ✅ Complete
+DT007	Sequential Write	  ✅ Complete
+DT008	Sequential Read	      ✅ Complete
+DT009	Illegal Address	      ✅ Complete
+DT010	Immediate Write/Read  ✅ Complete
+DT011	Stress Back-to-Back	  ✅ Complete
 ---
 
 ## 8.2 Constrained-Random Tests
@@ -313,6 +329,7 @@ The completed project shall include:
 - Waveform generation
 - Coverage reports
 - Documentation
+- Phase Summary Documents
 - GitHub repository
 -Verification Plan
 -README
@@ -327,7 +344,8 @@ The completed project shall include:
 |----------|------|-------------|
 | 1.0 | July 6, 2026 | Initial verification plan |
 | 2.0 | July 12, 2026 | Updated after completing Phases 1–5, expanded directed tests, added coverage goals, exit criteria, risks, deliverables, and project status |
-
+| 2.1 | July 13, 2026 |Completed Phase 5 basic verification. Added Address 0, Address 31, Default Memory, Overwrite, Sequential Write,
+                        Sequential Read, Immediate Write/Read tests. Updated verification status and project progress. |
 ---
 
 # 17. Project Status
@@ -339,14 +357,14 @@ The completed project shall include:
 | Directed Tests | Complete |
 | Smoke Test | Complete |
 | Reset Test | Complete |
-| Illegal Address Test | In Progress |
+| Illegal Address Test | Complete |
 | Stress Back-to-Back Test | Complete |
 | Constrained-Random Tests | In Progress |
 | Random Basic Test | In Progress |
 | Long Random Regression | Planned |
 | Functional Coverage | Planned |
 | Code Coverage | Planned |
-| Regression Script | Planned |
+| Regression Script | In Progress |
 | Verification Plan | Complete |
 ---
 

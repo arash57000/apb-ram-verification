@@ -101,6 +101,10 @@ seqwrite:
 seqread:
 	make clean
 	make SIM=$(SIM) MODULE=tests.test_sequential_read
+
+writerd:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_write_read_immediate
 # =====================================================
 # Run all tests
 # =====================================================
