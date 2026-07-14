@@ -105,16 +105,36 @@ seqread:
 writerd:
 	make clean
 	make SIM=$(SIM) MODULE=tests.test_write_read_immediate
+	
 # =====================================================
-# Run all tests
+# Run Full Regression
 # =====================================================
 
 regress:
-	make smoke
-	make illegal
-	make random
-	make stress
-	make reset
+	@echo ""
+	@echo "======================================================"
+	@echo "        APB RAM FULL REGRESSION STARTED"
+	@echo "======================================================"
+	@echo ""
+
+	$(MAKE) smoke
+	$(MAKE) reset
+	$(MAKE) illegal
+	$(MAKE) addr0
+	$(MAKE) addr31
+	$(MAKE) read_default
+	$(MAKE) overwrite
+	$(MAKE) seqwrite
+	$(MAKE) seqread
+	$(MAKE) writerd
+	$(MAKE) stress
+	$(MAKE) random
+
+	@echo ""
+	@echo "======================================================"
+	@echo "          APB RAM REGRESSION PASSED"
+	@echo "======================================================"
+	@echo ""
 
 # =====================================================
 # Coverage report

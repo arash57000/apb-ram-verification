@@ -1,21 +1,60 @@
 import cocotb
-from tb.cocotb.env.config import ApbConfig
-from env.env import ApbEnv
-from env.apb_driver import ApbDriver
-from env.apb_monitor import ApbMonitor
-from env.scoreboard import ApbScoreboard
-from env.regression import build_env
+from cocotb.clock import Clock
+
+from .tb_utils import (
+    reset_dut,
+    apb_write_expect_error,
+    apb_read_expect_error,
+)
+
 
 @cocotb.test()
 async def test_illegal_addr(dut):
-    cfg = ApbConfig(depth=32)
-    env = ApbEnv(dut, cfg)
-    await env.start()
+    """
+    Directed Test
 
-    await env.reset()
-    await env.agent.drv.write(45, 0x3333, expect_slverr=1)
-    await env.agent.drv.read(45, expect_slverr=1)
+    Verification Objective:
+        Verify that the DUT asserts PSLVERR for
+        illegal APB read and write accesses.
+    """
 
-    if env.scoreboard:
-        env.scoreboard.assert_no_errors()
+    cocotb.start_soon(Clock(dut.pclk, 10, units="ns").start())
 
+    cocotb.log.info(
+        "========== DIRECTED TEST: ILLEGAL ADDRESS =========="
+    )
+
+    await reset_dut(dut)
+
+    illegal_addr = 45
+
+    cocotb.log.info(
+        f"WRITE ADDR={illegal_addr} (illegal)"
+    )
+
+    err = await apb_write_expect_error(
+        dut,
+        illegal_addr,
+        0x12345678
+    )
+
+    assert err == 1, (
+        "Expected PSLVERR during illegal write."
+    )
+
+    cocotb.log.info(
+        f"READ ADDR={illegal_addr} (illegal)"
+    )
+
+    _, err = await apb_read_expect_error(
+        dut,
+        illegal_addr
+    )
+
+    assert err == 1, (
+        "Expected PSLVERR during illegal read."
+    )
+
+    cocotb.log.info(
+        "PASS: Illegal address verification completed successfully."
+    )

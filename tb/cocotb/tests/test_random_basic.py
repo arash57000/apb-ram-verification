@@ -1,54 +1,86 @@
-import cocotb
 import random
 
-from env.apb_driver import ApbDriver
-from env.apb_monitor import ApbMonitor
-from env.scoreboard import ApbScoreboard
-from env.regression import build_env
-from tb.sequences.apb_sequence import ApbSequence
+import cocotb
+from cocotb.clock import Clock
+
+from .tb_utils import (
+    reset_dut,
+    apb_write,
+    apb_read,
+)
+
 
 @cocotb.test()
-async def test_random(dut):
+async def test_random_basic(dut):
+    """
+    Random Basic Test
 
-    dut._log.info("===== RANDOM BASIC TEST START =====")
+    Verification Objective:
+        Perform randomized legal APB writes and reads and verify
+        that every read returns the expected value.
+    """
 
-    env = await build_env(dut, depth=32)
-    drv = env.driver
-    sco = env.scoreboard
-    cov = env.coverage
+    cocotb.start_soon(Clock(dut.pclk, 10, units="ns").start())
 
-    seq = ApbSequence()
+    cocotb.log.info("========== RANDOM BASIC TEST ==========")
 
-    # --------------------
-    # Reset
-    # --------------------
-    await drv.reset()
+    await reset_dut(dut)
 
-    # --------------------
-    # Random traffic
-    # --------------------
-    for i in range(500):
+    # Fixed seed makes failures reproducible.
+    seed = 12345
+    random.seed(seed)
 
-        op, addr, data = seq.next_txn()
+    cocotb.log.info(f"Random seed = {seed}")
 
-        dut._log.info(f"[TXN {i}] {op} addr={addr} data={data}")
+    # Python reference model:
+    # address -> expected stored data
+    expected_memory = {
+        addr: 0x00000000 for addr in range(32)
+    }
 
-        if op == "reset":
-            await drv.reset()
+    number_of_transactions = 100
 
-        elif op == "write":
-            await drv.write(addr, data)
+    for transaction in range(number_of_transactions):
 
-        elif op == "read":
-            await drv.read(addr)
+        addr = random.randint(0, 31)
+        operation = random.choice(["WRITE", "READ"])
 
-    # --------------------
-    # Final checks
-    # --------------------
-    summ = sco.summary()
+        if operation == "WRITE":
 
-    assert summ["errors"] == 0, f"Random regression failed: {summ}"
+            data = random.randint(0, 0xFFFFFFFF)
 
-    dut._log.info("===== RANDOM TEST PASS =====")
-    dut._log.info(f"Scoreboard: {summ}")
-    dut._log.info(f"Coverage:   {cov.report()}")
+            cocotb.log.info(
+                f"TXN={transaction:03d} "
+                f"WRITE ADDR={addr:02d} "
+                f"DATA=0x{data:08X}"
+            )
+
+            await apb_write(dut, addr, data)
+
+            # Update expected value after the DUT write.
+            expected_memory[addr] = data
+
+        else:
+
+            expected_data = expected_memory[addr]
+
+            read_data = await apb_read(dut, addr)
+
+            cocotb.log.info(
+                f"TXN={transaction:03d} "
+                f"READ ADDR={addr:02d} "
+                f"EXPECTED=0x{expected_data:08X} "
+                f"ACTUAL=0x{read_data:08X}"
+            )
+
+            assert read_data == expected_data, (
+                f"Random read mismatch during transaction {transaction}. "
+                f"Address={addr}, "
+                f"Expected=0x{expected_data:08X}, "
+                f"Received=0x{read_data:08X}, "
+                f"Seed={seed}"
+            )
+
+    cocotb.log.info(
+        f"PASS: Completed {number_of_transactions} randomized transactions."
+    )

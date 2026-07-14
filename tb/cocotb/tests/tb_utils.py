@@ -170,6 +170,7 @@ async def initialize_memory_pattern(dut):
 
 async def apb_write_expect_error(dut, addr, data):
 
+    # Setup phase
     dut.psel.value    = 1
     dut.penable.value = 0
     dut.pwrite.value  = 1
@@ -178,15 +179,25 @@ async def apb_write_expect_error(dut, addr, data):
 
     await RisingEdge(dut.pclk)
 
+    # Access phase
     dut.penable.value = 1
 
     await RisingEdge(dut.pclk)
 
-    err = int(dut.PSLVERR.value)
+    # Sample DUT output after RTL updates complete
+    await ReadOnly()
 
+    err = int(dut.pslverr.value)
+
+    # Advance to a writable phase before driving signals again
+    await RisingEdge(dut.pclk)
+
+    # Return to idle
     dut.psel.value    = 0
     dut.penable.value = 0
     dut.pwrite.value  = 0
+
+    await RisingEdge(dut.pclk)
 
     return err
 
@@ -196,6 +207,7 @@ async def apb_write_expect_error(dut, addr, data):
 
 async def apb_read_expect_error(dut, addr):
 
+    # Setup phase
     dut.psel.value    = 1
     dut.penable.value = 0
     dut.pwrite.value  = 0
@@ -203,14 +215,24 @@ async def apb_read_expect_error(dut, addr):
 
     await RisingEdge(dut.pclk)
 
+    # Access phase
     dut.penable.value = 1
 
     await RisingEdge(dut.pclk)
 
-    data = int(dut.prdata.value)
-    err  = int(dut.PSLVERR.value)
+    # Sample outputs after RTL updates complete
+    await ReadOnly()
 
+    data = int(dut.prdata.value)
+    err  = int(dut.pslverr.value)
+
+    # Advance to a writable phase before cleanup
+    await RisingEdge(dut.pclk)
+
+    # Return to idle
     dut.psel.value    = 0
     dut.penable.value = 0
+
+    await RisingEdge(dut.pclk)
 
     return data, err
