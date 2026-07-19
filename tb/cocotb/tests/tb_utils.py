@@ -110,7 +110,7 @@ async def apb_read(dut, addr):
 
 
     cocotb.log.info(
-    f"READ ADDR={addr} DATA=0x{data:02X}"
+    f"READ ADDR={addr:02d} DATA=0x{data:08X}"
     )
 
     return data

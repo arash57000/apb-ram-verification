@@ -38,8 +38,9 @@ EXTRA_ARGS += --trace --coverage --timing
 # -----------------------------
 
 export PYTHONPATH := $(PWD)/tb/cocotb:$(PYTHONPATH)
+
 # -----------------------------
-# Export vars
+# Export variables
 # -----------------------------
 
 export SIM
@@ -55,28 +56,20 @@ export VERILOG_SOURCES
 include /home/anddrew/cocotb-venv/lib/python3.12/site-packages/cocotb/share/makefiles/Makefile.sim
 
 # =====================================================
-# Regression Targets
+# Phase 5 — Basic Verification
 # =====================================================
 
 smoke:
 	make clean
 	make SIM=$(SIM) MODULE=tests.test_smoke
 
-illegal:
-	make clean
-	make SIM=$(SIM) MODULE=tests.test_illegal_addr
-
-random:
-	make clean
-	make SIM=$(SIM) MODULE=tests.test_random_basic
-
-stress:
-	make clean
-	make SIM=$(SIM) MODULE=tests.test_stress_back2back
-
 reset:
 	make clean
 	make SIM=$(SIM) MODULE=tests.test_reset
+
+illegal:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_illegal_addr
 
 addr0:
 	make clean
@@ -84,7 +77,7 @@ addr0:
 
 addr31:
 	make clean
-	make SIM=$(SIM) MODULE=tests.test_addr31	
+	make SIM=$(SIM) MODULE=tests.test_addr31
 
 read_default:
 	make clean
@@ -105,7 +98,69 @@ seqread:
 writerd:
 	make clean
 	make SIM=$(SIM) MODULE=tests.test_write_read_immediate
-	
+
+stress:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_stress_back2back
+
+random:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_random_basic
+
+# =====================================================
+# Phase 6 — Functional Verification
+# =====================================================
+
+# -----------------------------
+# Corner-Case Tests
+# -----------------------------
+
+data_patterns:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_data_patterns
+
+# Future Corner-Case Tests
+
+boundary_toggle:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_boundary_toggle
+
+ same_address:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_same_address_repeated
+
+# reset_mid_transaction:
+#	make clean
+#	make SIM=$(SIM) MODULE=tests.test_reset_mid_transaction
+#
+# post_reset_access:
+#	make clean
+#	make SIM=$(SIM) MODULE=tests.test_post_reset_access
+
+# -----------------------------
+# Negative Tests
+# -----------------------------
+
+# Future targets
+
+# -----------------------------
+# Random Tests
+# -----------------------------
+
+# Future targets
+
+# -----------------------------
+# Stress Tests
+# -----------------------------
+
+# Future targets
+
+# -----------------------------
+# Protocol Compliance Tests
+# -----------------------------
+
+# Future targets
+
 # =====================================================
 # Run Full Regression
 # =====================================================
@@ -116,7 +171,8 @@ regress:
 	@echo "        APB RAM FULL REGRESSION STARTED"
 	@echo "======================================================"
 	@echo ""
-
+    
+	# Phase 5
 	$(MAKE) smoke
 	$(MAKE) reset
 	$(MAKE) illegal
@@ -130,6 +186,11 @@ regress:
 	$(MAKE) stress
 	$(MAKE) random
 
+	# Phase 6
+	$(MAKE) data_patterns
+	$(MAKE) boundary_toggle
+	$(MAKE) same_address
+
 	@echo ""
 	@echo "======================================================"
 	@echo "          APB RAM REGRESSION PASSED"
@@ -137,7 +198,7 @@ regress:
 	@echo ""
 
 # =====================================================
-# Coverage report
+# Coverage Report
 # =====================================================
 
 coverage:
