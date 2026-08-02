@@ -99,10 +99,6 @@ writerd:
 	make clean
 	make SIM=$(SIM) MODULE=tests.test_write_read_immediate
 
-stress:
-	make clean
-	make SIM=$(SIM) MODULE=tests.test_stress_back2back
-
 random:
 	make clean
 	make SIM=$(SIM) MODULE=tests.test_random_basic
@@ -125,34 +121,73 @@ boundary_toggle:
 	make clean
 	make SIM=$(SIM) MODULE=tests.test_boundary_toggle
 
- same_address:
+same_address:
 	make clean
 	make SIM=$(SIM) MODULE=tests.test_same_address_repeated
 
-# reset_mid_transaction:
-#	make clean
-#	make SIM=$(SIM) MODULE=tests.test_reset_mid_transaction
+reset_during_transaction:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_reset_during_transaction
 #
-# post_reset_access:
-#	make clean
-#	make SIM=$(SIM) MODULE=tests.test_post_reset_access
+post_reset_access:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_post_reset_access
 
 # -----------------------------
 # Negative Tests
 # -----------------------------
-
+illegal_write:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_illegal_write_address
+illegal_read:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_illegal_read_address
+setup_no_enable:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_setup_without_enable	
+enable_no_select:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_enable_without_select	
+address_change:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_address_changes_during_access
+write_data_change:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_write_data_changes_during_access
+recovery_after_error:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_recovery_after_illegal_access
 # Future targets
 
 # -----------------------------
 # Random Tests
 # -----------------------------
-
+random_write_readback:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_random_write_readback
+random_read_write:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_random_read_write
+random_memory_sweep:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_random_memory_sweep
+random_illegal_access:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_random_illegal_access
 # Future targets
 
 # -----------------------------
 # Stress Tests
 # -----------------------------
-
+stress:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_stress_back2back
+stress_repeat:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_stress_repeated_address
+stress_full_memory:
+	make clean
+	make SIM=$(SIM) MODULE=tests.test_stress_full_memory
 # Future targets
 
 # -----------------------------
@@ -190,7 +225,8 @@ regress:
 	$(MAKE) data_patterns
 	$(MAKE) boundary_toggle
 	$(MAKE) same_address
-
+	$(MAKE) reset_during_transaction
+	$(MAKE) post_reset_access
 	@echo ""
 	@echo "======================================================"
 	@echo "          APB RAM REGRESSION PASSED"

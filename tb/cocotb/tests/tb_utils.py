@@ -12,6 +12,10 @@ from cocotb.triggers import ReadOnly
 
 async def reset_dut(dut):
 
+"""
+Reset the DUT and initialize all APB interface signals.
+"""
+
     dut.presetn.value = 0
 
     dut.psel.value    = 0
@@ -32,6 +36,10 @@ async def reset_dut(dut):
 # APB Write
 
 async def apb_write(dut, addr, data):
+
+"""
+Perform a single APB write transaction.
+"""
 
     # Setup phase
     dut.psel.value    = 1
@@ -54,34 +62,20 @@ async def apb_write(dut, addr, data):
     
     await RisingEdge(dut.pclk)
     
-    '''
-    
-   Why This Fix  adding extra await RisingEdge(dut.pclk)  at the end Works?
 
-Each transaction becomes:
-
-Cycle 1: SETUP
-Cycle 2: ACCESS
-Cycle 3: TRANSFER / cleanup
-
-Your original helper only gave:
-
-Cycle 1: SETUP
-Cycle 2: ACCESS
-
-So the next write started too early.
-
-After editing tb_utils.py, run:
-
-make stress 
-    
-    '''
 
 
 # -------------------------------------------------
 # APB Read
 
 async def apb_read(dut, addr):
+
+"""
+Perform a single APB read transaction.
+
+Returns:
+    int: Data read from the requested address.
+"""
 
     # Setup phase
     dut.psel.value    = 1
@@ -115,28 +109,6 @@ async def apb_read(dut, addr):
 
     return data
 
-    '''
-    
-   Why This Fix  adding extra await RisingEdge(dut.pclk)  at the end Works?
-
-Each transaction becomes:
-
-Cycle 1: SETUP
-Cycle 2: ACCESS
-Cycle 3: TRANSFER / cleanup
-
-Your original helper only gave:
-
-Cycle 1: SETUP
-Cycle 2: ACCESS
-
-So the next write started too early.
-
-After editing tb_utils.py, run:
-
-make stress 
-    
-    '''
 
 # -------------------------------------------------
 # Initialize RAM with a known data pattern
@@ -166,9 +138,56 @@ async def initialize_memory_pattern(dut):
     cocotb.log.info("RAM initialization complete.")
 
 # -------------------------------------------------
+# APB read and check PSLVERR
+async def apb_read_expect_error(
+    dut,
+    addr,
+):
+    """
+    Perform an illegal APB read.
+
+    Expected:
+        - PSLVERR asserted
+        - Read transaction completes
+    """
+
+    dut.psel.value = 1
+    dut.penable.value = 0
+    dut.pwrite.value = 0
+    dut.paddr.value = addr
+
+    await RisingEdge(dut.pclk)
+
+    dut.penable.value = 1
+
+    while True:
+
+        await RisingEdge(dut.pclk)
+
+        if dut.pready.value:
+            break
+
+    assert dut.pslverr.value == 1, (
+        f"Expected PSLVERR for illegal read "
+        f"address {addr}"
+    )
+
+    dut.psel.value = 0
+    dut.penable.value = 0
+
+    await RisingEdge(dut.pclk)
+
+# -------------------------------------------------
 # APB Write and check PSLVERR
 
 async def apb_write_expect_error(dut, addr, data):
+
+"""
+Perform an illegal APB write.
+
+Returns:
+    int: PSLVERR status from the transaction.
+"""
 
     # Setup phase
     dut.psel.value    = 1
@@ -202,37 +221,3 @@ async def apb_write_expect_error(dut, addr, data):
     return err
 
 
-# -------------------------------------------------
-# APB Read and check PSLVERR
-
-async def apb_read_expect_error(dut, addr):
-
-    # Setup phase
-    dut.psel.value    = 1
-    dut.penable.value = 0
-    dut.pwrite.value  = 0
-    dut.paddr.value   = addr
-
-    await RisingEdge(dut.pclk)
-
-    # Access phase
-    dut.penable.value = 1
-
-    await RisingEdge(dut.pclk)
-
-    # Sample outputs after RTL updates complete
-    await ReadOnly()
-
-    data = int(dut.prdata.value)
-    err  = int(dut.pslverr.value)
-
-    # Advance to a writable phase before cleanup
-    await RisingEdge(dut.pclk)
-
-    # Return to idle
-    dut.psel.value    = 0
-    dut.penable.value = 0
-
-    await RisingEdge(dut.pclk)
-
-    return data, err

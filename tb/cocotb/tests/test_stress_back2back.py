@@ -4,7 +4,6 @@ from cocotb.clock import Clock
 
 from cocotb.triggers import RisingEdge
 
-
 from tests.tb_utils import (
     reset_dut,
     apb_write,
@@ -12,71 +11,70 @@ from tests.tb_utils import (
 )
 
 
+
+
 @cocotb.test()
 async def test_stress_back2back(dut):
     """
-    Stress test:
-    - No idle cycles between APB transactions
-    - Write all locations
-    - Read all locations
-    - Verify data integrity
-    
-    
-    
+    Stress Test
+
+    Verify reliable APB operation during sustained
+    back-to-back transactions.
+
+    Test sequence:
+        - Reset DUT
+        - Write all 32 RAM locations
+        - Read back all 32 RAM locations
+        - Verify data integrity
     """
-    
-    
+
     cocotb.start_soon(
         Clock(dut.pclk, 10, units="ns").start()
     )
 
-    dut.presetn.value = 0
-
     await reset_dut(dut)
-    
-    
+
     await RisingEdge(dut.pclk)
     await RisingEdge(dut.pclk)
 
-    # -----------------------------
+    expected_memory = {}
+
+    # -------------------------------------------------
     # Back-to-back writes
-    # -----------------------------
+    # -------------------------------------------------
 
-    for addr in range(16):
+    for addr in range(32):
 
-        data = (addr * 3) & 0xFF
+        data = (0xA5A50000 | (addr * 3)) & 0xFFFFFFFF
+
+        expected_memory[addr] = data
+
 
         await apb_write(
             dut,
             addr,
             data
         )
-        
-        cocotb.log.info(
-    f"MEM0={int(dut.dut.mem[0].value)} "
-    f"MEM1={int(dut.dut.mem[1].value)} "
-    f"MEM2={int(dut.dut.mem[2].value)}"
-)
 
-    # -----------------------------
+    # -------------------------------------------------
     # Back-to-back reads
-    # -----------------------------
+    # -------------------------------------------------
 
-    for addr in range(16):
+    for addr in range(32):
 
-        expected = (addr * 3) & 0xFF
+        expected = expected_memory[addr]
 
         actual = await apb_read(
             dut,
             addr
         )
-        
-        
 
         assert actual == expected, (
             f"Address {addr}: "
-            f"Expected 0x{expected:02X}, "
-            f"Got 0x{actual:02X}"
+            f"Expected 0x{expected:08X}, "
+            f"Got 0x{actual:08X}"
         )
 
-    cocotb.log.info("test_stress_back2back PASSED")
+    cocotb.log.info(
+        "Stress back-to-back test PASSED."
+    )
