@@ -13,19 +13,18 @@ from .tb_utils import (
 @cocotb.test()
 async def test_address_changes_during_access(dut):
     """
-    Negative Test
+    Protocol Behavior Characterization Test
 
     Intentionally violate the APB requirement that PADDR remain
     stable from SETUP through ACCESS.
 
-    This test characterizes the DUT behavior. The current DUT
-    samples PADDR when the transfer completes in ACCESS.
+    This is not a protocol-compliance test. It documents the
+    current RTL behavior: the DUT samples PADDR when the
+    transfer completes during ACCESS.
     """
-
     cocotb.start_soon(
         Clock(dut.pclk, 10, units="ns").start()
     )
-
     await reset_dut(dut)
     await initialize_memory_pattern(dut)
 

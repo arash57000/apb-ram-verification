@@ -75,9 +75,26 @@ class ApbMonitor:
                     txn = ApbTxn(kind="WRITE", addr=addr, wdata=wdata, slverr=slverr, time_ns=now)
                     self.log.info(f"[{now:.1f} ns] WRITE  addr={addr} data=0x{wdata:08X} slverr={slverr}")
                 else:
-                    rdata = int(self.dut.prdata.value)
-                    txn = ApbTxn(kind="READ", addr=addr, rdata=rdata, slverr=slverr, time_ns=now)
-                    self.log.info(f"[{now:.1f} ns] READ   addr={addr} data=0x{rdata:08X} slverr={slverr}")
+                    try:
+                        rdata = int(self.dut.prdata.value)
+                        rdata_text = f"0x{rdata:08X}"
+                    except ValueError:
+                        rdata = None
+                        rdata_text = "XXXXXXXX"
+
+                    txn = ApbTxn(
+                        kind="READ",
+                        addr=addr,
+                        rdata=rdata,
+                        slverr=slverr,
+                        time_ns=now,
+                    )
+
+                    self.log.info(
+                        f"[{now:.1f} ns] READ   "
+                        f"addr={addr} data={rdata_text} "
+                        f"slverr={slverr}"
+                    )
 
                 self._publish(txn)
 

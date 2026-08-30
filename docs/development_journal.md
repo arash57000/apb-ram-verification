@@ -1,4 +1,4 @@
-# APB RAM Verification Project
+w# APB RAM Verification Project
 
 # Weekly Engineering Notes
 
@@ -270,15 +270,15 @@ Current Focus
 
 ---
 
-Week 4
+# Week 4
 
 Date: August 2, 2026
 
-Objectives
+## Objectives
 
 Review the APB RAM verification repository from a software engineering perspective and improve overall code quality, documentation, and GitHub presentation without changing verified functionality.
 
-Accomplishments
+## Accomplishments
 
 Completed:
 
@@ -292,7 +292,7 @@ Removed the obsolete test_illegal_addr.py after replacing it with dedicated ille
 Removed local __pycache__ directories from the development workspace.
 Reviewed the project README.md and identified future updates after Phase 6 completion.
 Established a weekly engineering review workflow for repository maintenance, documentation, and GitHub updates.
-Repository Improvements
+## Repository Improvements
 
 This week's work focused on improving repository maintainability and presentation.
 
@@ -307,7 +307,7 @@ Confirming Git hygiene through proper .gitignore configuration.
 
 These changes improved the overall quality of the project while preserving existing verification functionality.
 
-Lessons Learned
+## Lessons Learned
 
 Preparing a project for public review requires more than passing simulations.
 
@@ -321,7 +321,7 @@ Readable project organization
 
 Small improvements in readability can significantly improve the experience for reviewers and future contributors.
 
-Overall Progress
+## Overall Progress
 
 Completed
 
@@ -332,9 +332,127 @@ Phase 4 — Testbench Development
 Phase 5 — Basic Verification
 Phase 6 — Functional Verification (Directed, Boundary, Negative, Random, and Stress Testing)
 
-Current Focus
+## Current Focus
 
 ➡️ Phase 6 — Protocol Compliance Verification
+
+---
+# Week 5
+
+Date: August 23, 2026
+
+## Objectives
+
+Expand APB protocol behavior verification, strengthen stress testing, improve regression organization, preserve per-test coverage results, and continue repository engineering polish.
+
+## Accomplishments
+
+Completed:
+
+* Added `test_address_changes_during_access.py`.
+* Added `test_pwrite_changes_during_access.py`.
+* Added `test_pwdata_changes_during_access.py`.
+* Added `test_stress_mixed_traffic.py`.
+* Added deterministic mixed-traffic testing with 1,000 transactions and random seed `12345`.
+* Organized Makefile targets into basic, corner, negative, random, stress, and protocol groups.
+* Updated recursive Makefile commands to use `$(MAKE)`.
+* Added `.PHONY` declarations for executable Makefile targets.
+* Added per-test coverage preservation under `coverage_runs/tests/`.
+* Added merged and annotated coverage report generation.
+* Updated `.gitignore` to exclude generated coverage output and editor backup files.
+* Improved formatting, documentation, and logging in `tb_utils.py`.
+* Ran the complete APB RAM regression successfully.
+
+## Protocol Behavior Characterization
+
+The new protocol tests intentionally change APB control or data signals between SETUP and ACCESS.
+
+These tests are not APB protocol-compliance tests. They document the current RTL behavior when the APB stability requirements are intentionally violated.
+
+The characterization tests verify changes to:
+
+* `PADDR` during ACCESS
+* `PWRITE` during ACCESS
+* `PWDATA` during ACCESS
+
+The current RTL samples these signals when the transfer completes during ACCESS.
+
+## Stress Verification
+
+The mixed-traffic stress test performs 1,000 randomly selected reads and writes across all 32 RAM addresses.
+
+A software reference model tracks the expected contents of every address. Every read is compared against the reference model immediately.
+
+The fixed random seed makes the transaction sequence reproducible for debugging.
+
+## Regression and Coverage
+
+The regression is organized into these groups:
+
+* Basic tests
+* Corner-case tests
+* Negative tests
+* Random tests
+* Stress tests
+* Protocol tests
+
+The complete regression passed successfully.
+
+Merged Verilator code coverage reached:
+
+* 54 of 60 coverage points
+* 90% total code coverage
+
+Merged functional coverage reached:
+
+* 119 of 119 coverage bins
+* 100% total functional coverage
+* Zero uncovered functional-coverage bins
+
+## Coverage-Hole Analysis
+
+The annotated Verilator report identified one zero-hit RTL statement:
+
+```systemverilog
+default: state <= IDLE;
+```
+
+This defensive FSM branch cannot be exercised through normal APB stimulus. The state variable is two bits wide, and all four possible binary encodings are assigned to valid states: `IDLE`, `SETUP`, `ACCESS`, and `TRANSFER`.
+
+Verilator uses two-state simulation, so an unknown or high-impedance state value cannot be injected to reach the branch. Therefore, this statement is classified as structurally unreachable in the current simulation environment rather than as a missing functional test.
+
+The remaining code-coverage hole is accepted with justification. No additional APB test is required to close it.
+
+## Lessons Learned
+
+Protocol violations should be clearly separated from protocol-compliance testing. A characterization test documents how the current RTL responds to an invalid stimulus without claiming that the stimulus is legal APB behavior.
+
+Deterministic random seeds are important because they allow stress-test failures to be reproduced.
+
+Grouped regression targets make large verification suites easier to run, understand, debug, and maintain.
+
+Generated coverage artifacts and temporary editor files should remain outside version control.
+
+## Overall Progress
+
+Completed:
+
+* Phase 1 — Planning
+* Phase 2 — Repository Setup
+* Phase 3 — RTL Development
+* Phase 4 — Testbench Development
+* Phase 5 — Basic Verification
+* Phase 6 — Functional and Protocol Verification
+* Phase 7 — Coverage
+
+Infrastructure established:
+
+* Initial automated regression foundation for Phase 8
+
+
+## Current Focus
+
+➡️ Phase 8 — Regression automation and reporting
 
 ---
 
