@@ -92,7 +92,7 @@ class ApbMonitor:
 
                     self.log.info(
                         f"[{now:.1f} ns] READ   "
-                        f"addr={addr} data={rdata_text} "
+                        f"addr=0x{addr:08X} data={rdata_text} "
                         f"slverr={slverr}"
                     )
 

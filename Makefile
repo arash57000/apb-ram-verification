@@ -347,15 +347,15 @@ regress-coverage:
 # =====================================================
 
 coverage:
+	rm -rf $(COVERAGE_DIR)/annotated
 	mkdir -p $(COVERAGE_MERGED_DIR)
 	mkdir -p $(COVERAGE_DIR)/annotated
 	verilator_coverage --write $(COVERAGE_MERGED_DIR)/regression.dat $(COVERAGE_TEST_DIR)/*.dat
-	verilator_coverage --annotate $(COVERAGE_DIR)/annotated $(COVERAGE_MERGED_DIR)/regression.dat
+	verilator_coverage --annotate $(COVERAGE_DIR)/annotated --annotate-all $(COVERAGE_MERGED_DIR)/regression.dat
 	@echo ""
 	@echo "======================================================"
 	@echo "        APB RAM COVERAGE REPORT COMPLETE"
 	@echo "======================================================"
-
 # =====================================================
 # Functional Coverage Report
 # =====================================================

@@ -35,11 +35,15 @@ async def test_illegal_write_address(dut):
         (255, 0xFFFFFFFF),
     ]
 
+    illegal_addresses += [
+        (0xFFFFFFFF, 0xA5A5A5A5)
+    ] * 10
+
     for addr, data in illegal_addresses:
 
         cocotb.log.info(
             f"\n=== Illegal Write Test ===\n"
-            f"ADDR : {addr}\n"
+            f"ADDR : 0x{addr:08X}\n"
             f"DATA : 0x{data:08X}"
         )
 

@@ -88,7 +88,9 @@ module apb_ram (
                     state   <= SETUP;
                 end
 
+                /* verilator coverage_off */
                 default: state <= IDLE;
+                /* verilator coverage_on */
 
             endcase
         end

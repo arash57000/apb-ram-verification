@@ -74,6 +74,27 @@ async def test_reset_during_transaction(dut):
 
     await RisingEdge(dut.pclk)
 
+    # Apply nine additional reset pulses.
+    # Together with the first pulse above, this gives
+    # ten presetn 1-to-0 transitions.
+    for reset_iteration in range(2, 11):
+
+        dut._log.info(
+            f"Applying additional reset pulse {reset_iteration}/10"
+        )
+
+        # Assert active-low reset: 1 -> 0
+        dut.presetn.value = 0
+
+        await RisingEdge(dut.pclk)
+        await RisingEdge(dut.pclk)
+
+        # Release reset: 0 -> 1
+        dut.presetn.value = 1
+
+        await RisingEdge(dut.pclk)
+
+
     # ---------------------------------------------------------
     # Cleanup bus signals
     # ---------------------------------------------------------

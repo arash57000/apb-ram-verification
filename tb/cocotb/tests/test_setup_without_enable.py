@@ -47,7 +47,7 @@ async def test_setup_without_enable(dut):
     #
     # Stay in SETUP for several cycles
     #
-    for _ in range(5):
+    for _ in range(10):
         await RisingEdge(dut.pclk)
 
     #
