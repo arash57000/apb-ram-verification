@@ -25,8 +25,9 @@ MODULE ?= tests.test_smoke
         random_write_readback random_read_write random_memory_sweep \
         random_illegal_access stress stress_repeat stress_full_memory \
         stress_mixed enable_no_select address_change pwritechange pwdatachange \
-        basic corner negative random_tests stress_tests protocol regress \
-        regress-coverage coverage clean-all
+        basic corner negative random_tests stress_tests protocol regress regression-report \
+        regress-coverage coverage clean-all \
+        functional-coverage regress-functional-coverage clean-functional-coverage
 
 
 # -----------------------------
@@ -55,11 +56,14 @@ COVERAGE_MERGED_DIR := $(COVERAGE_DIR)/merged
 FUNCTIONAL_COVERAGE_DIR := functional_coverage
 FUNCTIONAL_COVERAGE_TEST_DIR := $(FUNCTIONAL_COVERAGE_DIR)/tests
 FUNCTIONAL_COVERAGE_MERGED_DIR := $(FUNCTIONAL_COVERAGE_DIR)/merged
+
+RESULTS_TEST_DIR := results/tests
 define SAVE_COVERAGE
 	mkdir -p $(COVERAGE_TEST_DIR)
 	cp coverage.dat $(COVERAGE_TEST_DIR)/$(1).dat
+	mkdir -p $(RESULTS_TEST_DIR)
+	cp results.xml $(RESULTS_TEST_DIR)/$(1).xml
 endef
-
 
 # -----------------------------
 # Python path
@@ -322,17 +326,23 @@ regress:
 	@echo "======================================================"
 	@echo ""
 
-	$(MAKE) basic
-	$(MAKE) corner
-	$(MAKE) negative
-	$(MAKE) random_tests
-	$(MAKE) stress_tests
-	$(MAKE) protocol
+	rm -rf $(RESULTS_TEST_DIR)
 
+	@for group in basic corner negative random_tests stress_tests protocol; do \
+		$(MAKE) "$$group" || { \
+			mkdir -p $(RESULTS_TEST_DIR); \
+			printf '<testsuite><testcase name="%s"><failure message="Make group failed"/></testcase></testsuite>\n' "$$group" > $(RESULTS_TEST_DIR)/regression_failure.xml; \
+			$(MAKE) regression-report || true; \
+			exit 1; \
+		}; \
+	done
+	$(MAKE) regression-report
 	@echo ""
 	@echo "======================================================"
 	@echo "          APB RAM REGRESSION PASSED"
 	@echo "======================================================"
+regression-report:
+	python scripts/regression_report.py
 
 # =====================================================
 # Full Regression + Coverage
@@ -356,6 +366,7 @@ coverage:
 	@echo "======================================================"
 	@echo "        APB RAM COVERAGE REPORT COMPLETE"
 	@echo "======================================================"
+
 # =====================================================
 # Functional Coverage Report
 # =====================================================
