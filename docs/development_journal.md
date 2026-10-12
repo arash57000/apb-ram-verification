@@ -456,6 +456,204 @@ Infrastructure established:
 
 ---
 
+# Week 6
+
+Date: September 22–October 12, 2026
+
+## Objectives
+
+Complete regression reporting, perform waveform-based debugging, rerun the final verification flow, close Phase 10 documentation, and prepare the project for final release.
+
+## Regression Automation and Reporting
+
+Completed:
+
+* Added `scripts/regression_report.py`.
+* Updated the Makefile to preserve individual Cocotb XML result files.
+* Added the `regression-report` target.
+* Added grouped error handling to the full regression.
+* Generated `results/regression_report.txt`.
+* Confirmed that all 32 tests appear in the final report.
+* Confirmed zero failed and zero skipped tests.
+
+Final regression result:
+
+```text
+Total: 32  Passed: 32  Failed: 0  Skipped: 0
+```
+
+The regression is organized into:
+
+* 10 basic tests
+* 5 corner-case tests
+* 5 negative tests
+* 4 random tests
+* 4 stress tests
+* 4 protocol-characterization tests
+
+## Waveform Debugging
+
+Performed a controlled debugging exercise using the smoke test.
+
+The exercise:
+
+1. Deliberately changed the expected read value so the test would fail.
+2. Ran the focused Cocotb test.
+3. Observed the assertion failure and simulation log.
+4. Opened the generated VCD waveform in GTKWave.
+5. Inspected the APB clock, reset, control, address, data, ready, error, and state signals.
+6. Confirmed that the DUT returned the correct value and that the expected value was intentionally wrong.
+7. Restored the correct test expectation.
+8. Reran the focused test successfully.
+9. Reran the regression and coverage flow successfully.
+
+This exercise demonstrated how logs, assertions, and waveforms work together during failure diagnosis.
+
+## Final Coverage Results
+
+Final merged functional coverage:
+
+```text
+119/119 bins = 100%
+```
+
+Final merged Verilator code coverage:
+
+```text
+56/59 coverage points = 94%
+```
+
+The original code-coverage goal was 95%. The final result was accepted after coverage-hole analysis, full regression success, 100% functional coverage, and documented exclusion of the structurally unreachable defensive FSM default branch.
+
+The default FSM branch is structurally unreachable in the current Verilator environment because:
+
+* The state variable is two bits wide.
+* All four possible two-bit encodings are assigned to valid states.
+* Verilator uses two-state simulation.
+* An unknown or high-impedance state cannot be injected to reach the branch.
+
+## Phase 10 Documentation
+
+Completed and verified:
+
+* `docs/architecture.md`
+* `docs/test_summary.md`
+* Version 3.0 of `docs/verification_plan.md`
+* Final portfolio-facing `README.md`
+* Final development-journal entry
+
+The architecture document records:
+
+* DUT structure
+* APB interface
+* Memory organization
+* Four-state FSM
+* Reset, read, write, and error behavior
+* Active verification flow
+* Monitor-to-coverage flow
+* Functional coverage model
+* Reusable but inactive framework components
+* Code-coverage exclusion rationale
+
+The test summary records:
+
+* All 32 tests
+* Six regression groups
+* Test objectives
+* Final pass status
+* Functional coverage relationship
+* Regression and reporting flow
+
+The verification plan was updated from an early planning document to an accurate as-built verification plan containing the final strategy, environment, test categories, coverage results, exit criteria, risks, limitations, and deliverables.
+
+The README was rewritten as the final project report and portfolio entry. Outdated planned-work sections were removed and replaced with verified final results, correct run commands, architecture, coverage, debugging, lessons learned, documentation links, limitations, and optional future enhancements.
+
+## Lessons Learned
+
+### Sample Outputs After RTL Updates
+
+Cocotb checks must sample DUT outputs after nonblocking assignments and other simulator updates have settled. Using the `ReadOnly` trigger avoids race conditions and prevents checks from reading stale output values.
+
+### Separate Legal Protocol Tests from Characterization
+
+Tests that intentionally change `PADDR`, `PWRITE`, or `PWDATA` between SETUP and ACCESS violate APB master requirements.
+
+These tests are useful for documenting the current RTL response, but they should be classified as behavior-characterization tests rather than protocol-compliance tests.
+
+### Functional Coverage and Code Coverage Measure Different Things
+
+One hundred percent functional coverage confirms that every planned functional bin was observed. It does not imply that every RTL coverage point is reachable or executed.
+
+Functional coverage answers whether planned scenarios occurred. Code coverage identifies which RTL structures executed.
+
+### Coverage Holes Require Engineering Analysis
+
+A coverage hole should not automatically cause another test to be added.
+
+The engineer must determine whether the hole represents:
+
+* Missing stimulus
+* Missing checking
+* An untested functional path
+* Structurally unreachable logic
+* A simulator limitation
+* A justified exclusion
+
+### Deterministic Random Testing Improves Debugging
+
+Fixed random seeds make long randomized and stress-test failures reproducible. Reproducibility allows the same sequence to be rerun while examining logs and waveforms.
+
+### Regression Results Must Be Preserved
+
+Saving per-test XML files provides an auditable record of the regression. It also allows a separate reporting script to summarize results after all tests complete.
+
+### Documentation Must Match the Active Implementation
+
+The repository contains reusable driver, agent, environment, scoreboard, interface, and sequence components. However, the active regression uses APB helper functions, direct assertions, local reference models, the transaction monitor, and the functional coverage collector.
+
+Documentation must clearly distinguish implemented reusable infrastructure from the path actually exercised by the regression.
+
+### Historical Results Should Remain Historical
+
+Earlier weekly coverage numbers and project status remain in the journal because they accurately record the project at that time. Final documents separately report the completed results.
+
+### Version Control Supports Safe Documentation Rework
+
+Git made it safe to replace outdated verification-plan and README content because every earlier version remained recoverable through commit history.
+
+## Final Verification Status
+
+| Metric | Final result |
+|---|---:|
+| Regression tests | 32 |
+| Passed | 32 |
+| Failed | 0 |
+| Skipped | 0 |
+| Functional coverage | 119/119 bins, 100% |
+| Verilator code coverage | 56/59 points, 94% |
+| Known critical functional bugs | 0 |
+
+## Overall Progress
+
+Completed:
+
+* Phase 1 — Planning
+* Phase 2 — Repository Setup
+* Phase 3 — RTL Development
+* Phase 4 — Testbench Development
+* Phase 5 — Basic Verification
+* Phase 6 — Functional and Protocol Verification
+* Phase 7 — Coverage
+* Phase 8 — Regression and Reporting
+* Phase 9 — Waveform Debugging
+* Phase 10 — Documentation
+
+## Current Focus
+
+➡️ Phase 11 — Final cleanup, GitHub release, release tagging, and portfolio screenshots
+
+---
+
 # Project Evolution
 
 The APB RAM Verification Project has evolved from a basic directed-test environment into a layered Cocotb-based verification environment featuring directed, boundary, negative, random, and stress testing.
