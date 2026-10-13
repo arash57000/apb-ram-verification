@@ -43,7 +43,7 @@ The project demonstrates a complete verification workflow:
 | Skipped | 0 |
 | Regression pass rate | 100% |
 | Functional coverage | 119/119 bins, 100% |
-| Verilator code coverage | 56/59 points, 94% |
+| Verilator code coverage | 59/59 points, 100% |
 | Known critical functional bugs | 0 |
 
 ```text
@@ -348,10 +348,14 @@ Verilator coverage is collected for every test and merged across the regression.
 Final result:
 
 ```text
-56/59 coverage points = 94%
+59/59 coverage points = 100.00%
 ```
 
-The original planning goal was 95%. The final result is one percentage point below that aspirational target and was accepted after coverage-hole analysis, complete regression success, and 100% functional coverage.
+The original planning goal was 95% RTL code coverage. The final regression achieved 100% of the Verilator coverage points included in the report, exceeding the original target.
+
+The coverage results were obtained after completing coverage-hole analysis and excluding the structurally unreachable FSM default branch. All 32 regression tests passed, and functional coverage reached 119/119 bins (100%).
+
+The reported 100% code coverage applies to Verilator's included coverage points and does not guarantee that every possible RTL behavior has been verified.
 
 ### Structurally Unreachable FSM Default
 
@@ -660,7 +664,7 @@ Additional weekly lessons are recorded in [Development Journal](docs/development
 | Testbench development | Complete |
 | Functional verification | Complete |
 | Functional coverage | Complete — 100% |
-| Code-coverage analysis | Complete — 94% |
+| Code-coverage analysis | Complete — 100% |
 | Regression automation | Complete |
 | Waveform debugging | Complete |
 | Architecture documentation | Complete |
